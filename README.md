@@ -7,6 +7,10 @@ A Spring Boot REST service that automatically reviews GitHub pull requests using
 - REST API endpoint for generating PR reviews
 - Integration with GitHub API to fetch PR diffs
 - AI-powered code review using Ollama
+- Flexible prompt template system:
+  - Specify any `.txt` template file name in the request
+  - Built-in templates: `prompt-template.txt` (general), `qa-automation-prompt-template.txt` (QA automation)
+  - Easy to add custom templates by placing `.txt` files in resources
 - Optional automatic posting of reviews to GitHub PRs
 
 ## Configuration
@@ -50,9 +54,15 @@ Request body:
 {
   "repository": "owner/repo",
   "prNumber": 123,
-  "postToGitHub": false
+  "postToGitHub": false,
+  "templateName": "prompt-template.txt"
 }
 ```
+
+**Template Names:**
+- `prompt-template.txt` (default): Standard code review for Java code
+- `qa-automation-prompt-template.txt`: Specialized review for test automation code
+- Any custom `.txt` file placed in `src/main/resources/`
 
 Response:
 ```json
@@ -72,7 +82,7 @@ Response: `"Review service is running"`
 ## Example Usage
 
 ```bash
-# Generate review without posting
+# Generate review without posting (using default template)
 curl -X POST http://localhost:8080/api/review \
   -H "Content-Type: application/json" \
   -d '{
@@ -81,13 +91,24 @@ curl -X POST http://localhost:8080/api/review \
     "postToGitHub": false
   }'
 
-# Generate and post review to GitHub
+# Generate review with QA automation template
+curl -X POST http://localhost:8080/api/review \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repository": "svasenkov/niffler-ai-tests",
+    "prNumber": 1,
+    "postToGitHub": false,
+    "templateName": "qa-automation-prompt-template.txt"
+  }'
+
+# Generate and post review to GitHub with custom template
 curl -X POST http://localhost:8080/api/review \
   -H "Content-Type: application/json" \
   -d '{
     "repository": "svasenkov/niffler-ai-tests", 
     "prNumber": 1,
-    "postToGitHub": true
+    "postToGitHub": true,
+    "templateName": "prompt-template.txt"
   }'
 ```
 

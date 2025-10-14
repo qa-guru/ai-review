@@ -34,6 +34,50 @@ class ReviewRequestValidationTest {
     }
     
     @Test
+    void validRequestWithCustomTemplate_ShouldPassAllValidations() {
+        // Given
+        ReviewRequest request = new ReviewRequest("octocat/Hello-World", 123, false, "qa-automation-prompt-template.txt");
+        
+        // When
+        Set<ConstraintViolation<ReviewRequest>> violations = validator.validate(request);
+        
+        // Then
+        assertTrue(violations.isEmpty());
+    }
+    
+    @Test
+    void invalidTemplateName_ShouldFailValidation() {
+        // Given
+        ReviewRequest request = new ReviewRequest("octocat/Hello-World", 123, false, "invalid-template");
+        
+        // When
+        Set<ConstraintViolation<ReviewRequest>> violations = validator.validate(request);
+        
+        // Then
+        assertFalse(violations.isEmpty());
+        assertEquals(1, violations.size());
+        ConstraintViolation<ReviewRequest> violation = violations.iterator().next();
+        assertEquals("templateName", violation.getPropertyPath().toString());
+        assertEquals("Invalid template name", violation.getMessage());
+    }
+    
+    @Test
+    void templateNameWithPathSeparator_ShouldFailValidation() {
+        // Given
+        ReviewRequest request = new ReviewRequest("octocat/Hello-World", 123, false, "folder/template.txt");
+        
+        // When
+        Set<ConstraintViolation<ReviewRequest>> violations = validator.validate(request);
+        
+        // Then
+        assertFalse(violations.isEmpty());
+        assertEquals(1, violations.size());
+        ConstraintViolation<ReviewRequest> violation = violations.iterator().next();
+        assertEquals("templateName", violation.getPropertyPath().toString());
+        assertEquals("Invalid template name", violation.getMessage());
+    }
+    
+    @Test
     void invalidRepository_ShouldFailValidation() {
         // Given
         ReviewRequest request = new ReviewRequest("invalid-repo-format", 123, false);

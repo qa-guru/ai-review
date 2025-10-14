@@ -2,6 +2,7 @@ package ai.review.dto;
 
 import ai.review.validation.ValidPrNumber;
 import ai.review.validation.ValidRepository;
+import ai.review.validation.ValidTemplateName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -37,12 +38,28 @@ public class ReviewRequest {
     )
     private boolean postToGitHub = false;
     
+    @Schema(
+        description = "Name of the prompt template file to use for review generation",
+        example = "prompt-template.txt",
+        defaultValue = "prompt-template.txt"
+    )
+    @ValidTemplateName
+    private String templateName = "prompt-template.txt";
+    
     public ReviewRequest() {}
     
     public ReviewRequest(String repository, Integer prNumber, boolean postToGitHub) {
         this.repository = repository;
         this.prNumber = prNumber;
         this.postToGitHub = postToGitHub;
+        this.templateName = "prompt-template.txt";
+    }
+    
+    public ReviewRequest(String repository, Integer prNumber, boolean postToGitHub, String templateName) {
+        this.repository = repository;
+        this.prNumber = prNumber;
+        this.postToGitHub = postToGitHub;
+        this.templateName = templateName;
     }
     
     public String getRepository() {
@@ -67,5 +84,13 @@ public class ReviewRequest {
     
     public void setPostToGitHub(boolean postToGitHub) {
         this.postToGitHub = postToGitHub;
+    }
+    
+    public String getTemplateName() {
+        return templateName;
+    }
+    
+    public void setTemplateName(String templateName) {
+        this.templateName = templateName;
     }
 }

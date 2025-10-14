@@ -125,4 +125,40 @@ class ReviewServiceTest {
         assertEquals("review", exception.getField());
         assertEquals(nullReview, exception.getValue());
     }
+    
+    @Test
+    void generateReview_WithQaAutomationTemplate_ShouldUseCorrectTemplate() {
+        // Given
+        String validRepo = "owner/repo";
+        int validPrNumber = 123;
+        String mockDiff = "diff content";
+        String expectedReview = "QA automation review";
+        
+        when(gitHubClient.getPullRequestDiff(validRepo, validPrNumber)).thenReturn(mockDiff);
+        when(ollamaClient.generate(org.mockito.ArgumentMatchers.anyString())).thenReturn(expectedReview);
+        
+        // When
+        String result = reviewService.generateReview(validRepo, validPrNumber, "qa-automation-prompt-template.txt");
+        
+        // Then
+        assertEquals(expectedReview, result);
+    }
+    
+    @Test
+    void generateReview_WithGeneralTemplate_ShouldUseCorrectTemplate() {
+        // Given
+        String validRepo = "owner/repo";
+        int validPrNumber = 123;
+        String mockDiff = "diff content";
+        String expectedReview = "General review";
+        
+        when(gitHubClient.getPullRequestDiff(validRepo, validPrNumber)).thenReturn(mockDiff);
+        when(ollamaClient.generate(org.mockito.ArgumentMatchers.anyString())).thenReturn(expectedReview);
+        
+        // When
+        String result = reviewService.generateReview(validRepo, validPrNumber, "prompt-template.txt");
+        
+        // Then
+        assertEquals(expectedReview, result);
+    }
 }
