@@ -2,7 +2,9 @@ package ai.review.service;
 
 import ai.review.github.GitHubClient;
 import ai.review.ollama.OllamaClient;
+import org.springframework.stereotype.Service;
 
+@Service
 public class ReviewService {
     private final GitHubClient gitHubClient;
     private final OllamaClient ollamaClient;
@@ -16,6 +18,10 @@ public class ReviewService {
         String diff = gitHubClient.getPullRequestDiff(repo, prNumber);
         String prompt = buildPrompt(diff);
         return ollamaClient.generate(prompt);
+    }
+    
+    public void postReviewToGitHub(String repo, int prNumber, String review) {
+        gitHubClient.postIssueComment(repo, prNumber, review);
     }
 
     private String buildPrompt(String unifiedDiff) {
