@@ -1,5 +1,6 @@
 package ai.review.ollama;
 
+import ai.review.config.OllamaProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -16,31 +17,29 @@ import java.time.Duration;
 public class OllamaClient {
     private final HttpClient http;
     private final ObjectMapper mapper;
-    private final String apiUrl;
-    private final String apiToken;
-    private final String model;
+    private final OllamaProperties properties;
 
-    public OllamaClient(String apiUrl, String apiToken, String model) {
-        this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
+    public OllamaClient(OllamaProperties properties) {
+        this.properties = properties;
+        this.http = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(properties.getConnectTimeoutSeconds()))
+                .build();
         this.mapper = new ObjectMapper();
-        this.apiUrl = apiUrl;
-        this.apiToken = apiToken;
-        this.model = model;
     }
 
     public String generate(String prompt) {
         try {
             // The endpoint looks like: POST /api/generate { model, prompt, stream:false }
             String payload = mapper.createObjectNode()
-                    .put("model", model)
+                    .put("model", properties.getModel())
                     .put("prompt", prompt)
                     .put("stream", false)
                     .toString();
-            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(apiUrl))
-                    .timeout(Duration.ofSeconds(60))
+            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(properties.getApiUrl()))
+                    .timeout(Duration.ofSeconds(properties.getRequestTimeoutSeconds()))
                     .header("Content-Type", "application/json");
-            if (apiToken != null && !apiToken.isBlank()) {
-                b.header("Authorization", "Bearer " + apiToken);
+            if (properties.getApiToken() != null && !properties.getApiToken().isBlank()) {
+                b.header("Authorization", "Bearer " + properties.getApiToken());
             }
             HttpRequest req = b.POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8)).build();
             HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
