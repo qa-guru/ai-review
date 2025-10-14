@@ -6,8 +6,12 @@ import ai.review.github.GitHubClient;
 import ai.review.ollama.OllamaClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class ReviewService {
@@ -22,7 +26,11 @@ public class ReviewService {
     }
 
     public String generateReview(String repo, int prNumber) {
-        logger.info("Generating review for repository: {}, PR: {}", repo, prNumber);
+        return generateReview(repo, prNumber, "prompt-template.txt");
+    }
+    
+    public String generateReview(String repo, int prNumber, String templateName) {
+        logger.info("Generating review for repository: {}, PR: {}, template: {}", repo, prNumber, templateName);
         
         // Validate input parameters
         validateRepository(repo);
@@ -38,7 +46,7 @@ public class ReviewService {
                 );
             }
             
-            String prompt = buildPrompt(diff);
+            String prompt = buildPrompt(diff, templateName);
             String review = ollamaClient.generate(prompt);
             
             if (!StringUtils.hasText(review)) {
@@ -49,7 +57,7 @@ public class ReviewService {
                 );
             }
             
-            logger.info("Successfully generated review for repository: {}, PR: {}", repo, prNumber);
+            logger.info("Successfully generated review for repository: {}, PR: {}, template: {}", repo, prNumber, templateName);
             return review;
             
         } catch (Exception e) {
@@ -119,18 +127,19 @@ public class ReviewService {
         }
     }
 
-    private String buildPrompt(String unifiedDiff) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Вы эксперт по ревью Java кода. Отвечайте только на русском языке.\n");
-        sb.append("Проведите ревью следующего GitHub PR diff.\n");
-        sb.append("Предоставьте: 1) Краткое резюме, 2) Сильные стороны, 3) Риски/Ошибки, 4) Предложения, 5) Замечания по безопасности/производительности если есть.\n");
-        sb.append("Форматируйте как краткие пункты списка.\n\n");
-        sb.append("PR Unified Diff:\n");
-        sb.append("```diff\n");
-        // keep diff as-is (may be large)
-        sb.append(unifiedDiff);
-        sb.append("\n``" + "`\n");
-        return sb.toString();
+    private String loadPromptTemplate(String templateName) {
+        try {
+            ClassPathResource resource = new ClassPathResource(templateName);
+            return resource.getContentAsString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            logger.error("Failed to load prompt template: {}", templateName, e);
+            throw new ReviewGenerationException("Failed to load prompt template: " + e.getMessage(), e);
+        }
+    }
+
+    private String buildPrompt(String unifiedDiff, String templateName) {
+        String template = loadPromptTemplate(templateName);
+        return template.replace("{DIFF_CONTENT}", unifiedDiff);
     }
 }
 

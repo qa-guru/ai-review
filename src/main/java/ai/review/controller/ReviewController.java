@@ -105,17 +105,18 @@ public class ReviewController {
                     {
                         "repository": "owner/repository",
                         "prNumber": 123,
-                        "postToGitHub": true
+                        "postToGitHub": true,
+                        "templateName": "prompt-template.txt"
                     }
                     """
                 )
             )
         )
         @Valid @RequestBody ReviewRequest request) {
-        logger.info("Received review request for repository: {}, PR: {}, postToGitHub: {}", 
-            request.getRepository(), request.getPrNumber(), request.isPostToGitHub());
+        logger.info("Received review request for repository: {}, PR: {}, postToGitHub: {}, template: {}", 
+            request.getRepository(), request.getPrNumber(), request.isPostToGitHub(), request.getTemplateName());
         
-        String review = reviewService.generateReview(request.getRepository(), request.getPrNumber());
+        String review = reviewService.generateReview(request.getRepository(), request.getPrNumber(), request.getTemplateName());
         
         boolean postedToGitHub = false;
         String message = "Review generated successfully";
