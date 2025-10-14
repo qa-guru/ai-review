@@ -1,8 +1,11 @@
 package ai.review.ollama;
 
 import ai.review.config.OllamaProperties;
+import ai.review.exception.OllamaApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -15,6 +18,8 @@ import java.time.Duration;
 
 @Component
 public class OllamaClient {
+    private static final Logger logger = LoggerFactory.getLogger(OllamaClient.class);
+    
     private final HttpClient http;
     private final ObjectMapper mapper;
     private final OllamaProperties properties;
@@ -28,6 +33,8 @@ public class OllamaClient {
     }
 
     public String generate(String prompt) {
+        logger.debug("Generating response using model: {}", properties.getModel());
+        
         try {
             // The endpoint looks like: POST /api/generate { model, prompt, stream:false }
             String payload = mapper.createObjectNode()
@@ -44,7 +51,13 @@ public class OllamaClient {
             HttpRequest req = b.POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8)).build();
             HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() >= 300) {
-                throw new RuntimeException("Ollama generate failed: " + resp.statusCode() + " " + resp.body());
+                String errorMessage = extractErrorMessage(resp.body());
+                throw new OllamaApiException(
+                    "Failed to generate response using model " + properties.getModel(),
+                    resp.statusCode(),
+                    properties.getModel(),
+                    new Exception(errorMessage)
+                );
             }
             JsonNode node = mapper.readTree(resp.body());
             // Common response field name: "response" or "text" depending on server
@@ -56,8 +69,31 @@ public class OllamaClient {
             }
             return resp.body();
         } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
+            throw new OllamaApiException(
+                "Network error while generating response using model " + properties.getModel(),
+                0,
+                properties.getModel(),
+                e
+            );
         }
+    }
+    
+    /**
+     * Extract error message from Ollama API response
+     */
+    private String extractErrorMessage(String responseBody) {
+        try {
+            JsonNode errorNode = mapper.readTree(responseBody);
+            if (errorNode.has("error")) {
+                return errorNode.get("error").asText();
+            }
+            if (errorNode.has("message")) {
+                return errorNode.get("message").asText();
+            }
+        } catch (Exception e) {
+            logger.debug("Failed to parse error response: {}", e.getMessage());
+        }
+        return responseBody;
     }
 }
 
