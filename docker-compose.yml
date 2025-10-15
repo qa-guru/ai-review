@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  github-pr-reviewer:
+    image: github-pr-reviewer:latest
+    build: .
+    ports:
+      - "8100:8080"
+    environment:
+      GH_TOKEN: ${GH_TOKEN}
+      OLLAMA_API_URL: ${OLLAMA_API_URL}
+      OLLAMA_API_TOKEN: ${OLLAMA_API_TOKEN}
+      OLLAMA_MODEL: ${OLLAMA_MODEL}
+
+  github-pr-reviewer-tests:
+    image: github-pr-reviewer:latest
+    command: ./gradlew test
+    environment:
+      GH_TOKEN: ${GH_TOKEN}
+      OLLAMA_API_URL: ${OLLAMA_API_URL}
+      OLLAMA_API_TOKEN: ${OLLAMA_API_TOKEN}
+      OLLAMA_MODEL: ${OLLAMA_MODEL}

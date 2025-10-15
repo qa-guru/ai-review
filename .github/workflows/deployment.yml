@@ -1,0 +1,35 @@
+name: Build and Run Docker Compose
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deployment:
+    runs-on: metrics
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Build
+        run: |
+          docker-compose build
+
+      - name: Test
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          OLLAMA_API_URL: ${{ vars.OLLAMA_API_URL }}
+          OLLAMA_API_TOKEN: ${{ secrets.OLLAMA_API_TOKEN }}
+          OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL }}
+        run: |
+          docker-compose run --rm github-pr-reviewer-tests
+
+      - name: Deploy
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          OLLAMA_API_URL: ${{ vars.OLLAMA_API_URL }}
+          OLLAMA_API_TOKEN: ${{ secrets.OLLAMA_API_TOKEN }}
+          OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL }}
+        run: |
+          docker-compose up -d
